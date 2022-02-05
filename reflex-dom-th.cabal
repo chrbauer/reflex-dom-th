@@ -47,11 +47,16 @@ test-suite test-reflex-dom-th
     test.hs
   build-depends:
             base
+          , bytestring
+          , filepath
+          , megaparsec
           , hspec
+          , reflex-dom-th
           , stm >= 2.5.0.2
           , tasty
+          , tasty-golden
           , tasty-hspec
-          , hspec-megaparsec
+          --, hspec-megaparsec
 
                     
           --, tasty-hspec

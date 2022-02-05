@@ -1,24 +1,27 @@
-
-import Test.Tasty
-import Test.Tasty.Hspec
-import Test.Hspec
-
+import Test.Tasty (defaultMain, TestTree, testGroup)
+import Test.Tasty.Golden (goldenVsString, findByExtension)
+import System.IO (readFile)
+import Reflex.Dom.TH
+import System.FilePath (takeBaseName, replaceExtension)
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as L
+import Text.Megaparsec
 
 main :: IO ()
-main = do
-  tree <- testSpec "hspec tests" hspecSuite
-  defaultMain tree
+main = defaultMain =<< goldenTests
 
-hspecSuite :: Spec
-hspecSuite = do
-  describe "passing test" $
-    it "5 == 5" $
-      5 `shouldBe` (5 :: Int)
+parseTemplate :: String -> LBS.ByteString -> LBS.ByteString
+parseTemplate  path = L.pack . show . runParser template  path .  L.unpack
+  
 
-  describe "pending test" $
-    it "pending" $
-      pending
-
-  describe "failing test" $
-    it "5 == 6" $
-      5 `shouldBe` (6 :: Int)
+goldenTests :: IO TestTree
+goldenTests = do
+  htmlFiles <- findByExtension [".html"] "."
+  return $ testGroup "Html Template Parser golden tests"
+    [ goldenVsString
+        (takeBaseName htmlFile) 
+        astFile
+        (parseTemplate htmlFile  <$> LBS.readFile htmlFile) 
+    | htmlFile <- htmlFiles
+    , let astFile  = replaceExtension htmlFile ".ast"
+    ]
