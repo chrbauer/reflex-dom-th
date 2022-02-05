@@ -5,10 +5,10 @@
 
     # List of packages from the project you want to work on in
     # the shell (default is all the projects local packages).
-    # packages = ps: with ps; [
-    #   pkga
+    packages = ps: with ps; [
+       megaparsec
     #   pkgb
-    #];
+    ];
 
     # Builds a Hoogle documentation index of all dependencies,
     # and provides a "hoogle" command to search the index.
