@@ -1,6 +1,8 @@
 
 import Test.Tasty
 import Test.Tasty.Hspec
+import Test.Hspec
+
 
 main :: IO ()
 main = do

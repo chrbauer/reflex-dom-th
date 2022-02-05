@@ -27,3 +27,9 @@ element = do
   closeTag tag
   return $ Element tag childs
 
+
+template = do
+  result <- element
+  space
+  eof
+  return result

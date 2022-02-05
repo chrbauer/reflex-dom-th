@@ -14,7 +14,7 @@ version:            0.1.0.0
 -- The license under which the package is released.
 -- license:
 author:             Christoph Bauer
-maintainer:         ich@christoph-bauer.net
+maintainer:         mail@christoph-bauer.net
 
 -- A copyright notice.
 -- copyright:
@@ -28,7 +28,7 @@ library
   exposed-modules:    Reflex.Dom.TH
   default-extensions: TemplateHaskell
   build-depends:
-              base ^>=4.14.3.0
+              base 
             , megaparsec
             , text
               
@@ -47,8 +47,12 @@ test-suite test-reflex-dom-th
     test.hs
   build-depends:
             base
-          , hspec-megaparsec
-          , reflex-dom-th
+          , hspec
+          , stm >= 2.5.0.2
           , tasty
           , tasty-hspec
+          , hspec-megaparsec
+
+                    
+          --, tasty-hspec
           
