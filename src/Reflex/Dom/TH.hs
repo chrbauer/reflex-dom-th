@@ -2,11 +2,8 @@
 
 module Reflex.Dom.TH where
 
-import Text.Megaparsec
-import Text.Megaparsec.Char
-import Data.Void
-import Data.Text (Text)
 import Language.Haskell.TH.Quote
+import Language.Haskell.TH
 
 import Reflex.Dom.TH.Parser
 import Reflex.Dom 
@@ -23,4 +20,5 @@ dom = QuasiQuoter
   , quotePat  = error "Usage as a parttern is not supported"
   , quoteType = error "Usage as a type is not supported"
   , quoteDec = error "Usage as a decl is not supported"
+
   }
