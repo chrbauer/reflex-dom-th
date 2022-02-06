@@ -6,30 +6,16 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Void
 import Data.Text (Text)
+import Language.Haskell.TH.Quote
 
-type Parser = Parsec Void String
-type Tag = String
-data Element = Element Tag [Element]
-               | Text String
-               deriving Show
+import Reflex.Dom.TH.Parser
 
-openTag :: Parser String 
-openTag =  try $ between (char '<') (space >> char '>') (many alphaNumChar)
-
-closeTag :: String -> Parser String 
-closeTag tag =  between (string "</") (space >> char '>') (string tag) 
-
-
-element :: Parser Element
-element = do
-  tag <- openTag
-  childs <- many element
-  closeTag tag
-  return $ Element tag childs
-
-
-template = do
-  result <- element
-  space
-  eof
-  return result
+dom :: QuasiQuoter
+dom = QuasiQuoter
+  { quoteExp  = \str ->
+      case parseTemplate "" str of
+        Left err -> fail $ show err
+        Right x  -> [| el "div" |]
+  , quotePat  = error "Usage as a parttern is not supported"
+  , quoteType = error "Usage as a type is not supported"
+  }

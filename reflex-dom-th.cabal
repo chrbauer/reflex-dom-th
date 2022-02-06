@@ -25,11 +25,14 @@ library
   build-depends:
                   base
                 , megaparsec  
-  exposed-modules:    Reflex.Dom.TH
+  exposed-modules:
+          Reflex.Dom.TH.Parser
+        , Reflex.Dom.TH
   default-extensions: TemplateHaskell
   build-depends:
               base 
             , megaparsec
+            , template-haskell
             , text
               
   hs-source-dirs:   src
