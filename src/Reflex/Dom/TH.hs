@@ -9,8 +9,10 @@ import Data.Text (Text)
 import Language.Haskell.TH.Quote
 
 import Reflex.Dom.TH.Parser
+import Reflex.Dom 
 
-instantiate  (Element name []) = [| el name $ blank |]
+instantiate :: TElement -> ExpQ
+instantiate  (TElement name []) = [| el name $ blank |]
 
 dom :: QuasiQuoter
 dom = QuasiQuoter
