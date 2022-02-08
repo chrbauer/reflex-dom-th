@@ -23,7 +23,7 @@
     # See overlays/tools.nix for more details
 
     # Some you may need to get some other way.
-    #buildInputs = [ (import <nixpkgs> {}).git ];
+    #buildInputs = [ (import <nixpkgs> {}).pkg-config ];
 
     # # Sellect cross compilers to include.
     # crossPlatforms = ps: with ps; [

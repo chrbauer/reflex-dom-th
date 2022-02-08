@@ -2,14 +2,22 @@
 
 module Reflex.Dom.TH where
 
+
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 
 import Reflex.Dom.TH.Parser
-import Reflex.Dom 
+import Reflex.Dom.Widget.Basic
 
 instantiate :: TElement -> ExpQ
-instantiate  (TElement name []) = [| el name $ blank |]
+instantiate  (TElement name cs) = [| el name $(childs cs)  |]
+instantiate  (TText "") = [| blank |]
+instantiate  (TText txt) = [| text txt |]
+
+childs :: [TElement] -> ExpQ
+childs [] = [| blank |]
+childs [x] = instantiate x
+childs (h:t) = [|  $(instantiate h) >> $(childs t) |]
 
 dom :: QuasiQuoter
 dom = QuasiQuoter

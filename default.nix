@@ -25,6 +25,10 @@ in pkgs.haskell-nix.project {
     name = "reflex-dom-th";
     src = ./.;
   };
-  # Specify the GHC version to use.
-  compiler-nix-name = "ghc8107"; # Not required for `stack.yaml` based projects.
+  compiler-nix-name = "ghc8107"; #
+
+  modules = [{
+    packages.reflex-dom-th.components.library.libs = pkgs.lib.mkForce (with pkgs;
+        [ pkg-config gi-base ]);
+  }];
 }

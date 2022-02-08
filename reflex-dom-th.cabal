@@ -32,7 +32,7 @@ library
   build-depends:
               base 
             , megaparsec
-            , reflex-dom
+            , reflex-dom-core
             , template-haskell
             , text
   ghc-options: -Wall -fwarn-tabs
