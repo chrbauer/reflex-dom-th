@@ -30,7 +30,8 @@ library
         , Reflex.Dom.TH
   default-extensions: TemplateHaskell
   build-depends:
-              base 
+              base
+            , containers  
             , megaparsec
             , reflex-dom-core
             , template-haskell

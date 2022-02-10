@@ -17,32 +17,47 @@ import Data.Text (Text)
 
 type Parser = Parsec Void String
 type TTag = String
-data TElement = TElement TTag [TElement]
+type Attributes = [(String, String)]
+data TElement = TElement TTag Attributes [TElement]
                | TText String
                deriving Show
 
-openTag :: Parser String 
-openTag =  do
-  try $ between (char '<') (space >> char '>') (many alphaNumChar)
+openTag :: Parser (String, Attributes)
+openTag =  
+     between (char '<') (space >> char '>') $ do
+       tag <- many (alphaNumChar <|> char '-')
+       attrs <- attributes
+       return (tag, attrs)
 
 closeTag :: String -> Parser String 
 closeTag tag =  do
   between (string "</") (space >> char '>') (string tag) 
 
 
+quote = char '"'
+
+attribute :: Parser (String, String)
+attribute = (,) <$>  (some alphaNumChar <* char '=') <*>
+                     between quote quote (many (satisfy (/= '"')))
+
+attributes :: Parser Attributes
+attributes = many (space1 *> attribute)
+                     
+
 node :: Parser TElement
 node = do
-  tag <- openTag
+  (tag, attrs) <- openTag
   childs <- many element
+  space
   closeTag tag
-  return $ TElement tag childs
+  return $ TElement tag attrs childs
 
 text = do
      t <- dropWhileEnd isSpace <$> some (satisfy (/= '<'))
      return $ TText  t
 
 element :: Parser TElement     
-element = do
+element = try $ do
   space
   node <|> text
   

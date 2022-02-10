@@ -8,9 +8,11 @@ import Language.Haskell.TH
 
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic
+import qualified Data.Map as M
 
 instantiate :: TElement -> ExpQ
-instantiate  (TElement name cs) = [| el name $(childs cs)  |]
+instantiate  (TElement name [] cs) = [| el name $(childs cs)  |]
+instantiate  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(childs cs)  |]
 instantiate  (TText "") = [| blank |]
 instantiate  (TText txt) = [| text txt |]
 
