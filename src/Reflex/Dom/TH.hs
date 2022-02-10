@@ -3,12 +3,15 @@
 module Reflex.Dom.TH where
 
 
+import Text.Megaparsec.Error
+
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
 
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic
 import qualified Data.Map as M
+
 
 instantiate :: TElement -> ExpQ
 instantiate  (TElement name [] cs) = [| el name $(childs cs)  |]
@@ -25,7 +28,7 @@ dom :: QuasiQuoter
 dom = QuasiQuoter
   { quoteExp  = \str ->
       case parseTemplate "" str of
-        Left err -> fail $ show err
+        Left err -> fail $ errorBundlePretty err
         Right x  ->  instantiate x
   , quotePat  = error "Usage as a parttern is not supported"
   , quoteType = error "Usage as a type is not supported"
