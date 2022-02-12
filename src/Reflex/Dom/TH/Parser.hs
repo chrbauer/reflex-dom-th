@@ -61,9 +61,8 @@ node = do
   closeTag tag
   return $ TElement tag attrs childs
 
-text = do
-     t <- dropWhileEnd isSpace <$> some (satisfy (/= '<'))
-     return $ TText  t
+text :: Parser TElement
+text =  TText <$>  dropWhileEnd isSpace <$> some (satisfy (/= '<'))
 
 element :: Parser TElement     
 element = try $ do
