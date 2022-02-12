@@ -10,8 +10,11 @@ import Text.Megaparsec
 main :: IO ()
 main = defaultMain =<< goldenTests
 
+
 templateToAst :: String -> LBS.ByteString -> LBS.ByteString
-templateToAst  path = L.pack . show . parseTemplate path .  L.unpack
+templateToAst  path = L.pack . render . parseTemplate path .  L.unpack
+  where render (Right x) = show x
+        render (Left err) = errorBundlePretty err
   
 
 goldenTests :: IO TestTree

@@ -12,6 +12,7 @@ import Data.List
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as L 
 import Data.Void
 import Data.Text (Text)
 
@@ -20,7 +21,12 @@ type TTag = String
 type Attributes = [(String, String)]
 data TElement = TElement TTag Attributes [TElement]
                | TText String
+               | TComment String
                deriving Show
+
+
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme space1
 
 openTag :: Parser (String, Attributes)
 openTag =  
@@ -30,15 +36,18 @@ openTag =
        return (tag, attrs)
 
 closeTag :: String -> Parser String 
-closeTag tag =  do
-  between (string "</") (space >> char '>') (string tag) 
+closeTag tag = between (string "</") (space >> char '>') (string tag)
+
+comment :: Parser TElement
+comment = TComment <$> between (string "<!--") (space >> string "-->") (many anySingle)
 
 
-quote = char '"'
+stringLiteral :: Parser String
+stringLiteral = char '\"' *> manyTill L.charLiteral (char '\"')
 
 attribute :: Parser (String, String)
-attribute = (,) <$>  (some alphaNumChar <* char '=') <*>
-                     between quote quote (many (satisfy (/= '"')))
+attribute = (,) <$>  (some alphaNumChar <* char '=') <*> stringLiteral
+
 
 attributes :: Parser Attributes
 attributes = many (space1 *> attribute)
@@ -59,7 +68,7 @@ text = do
 element :: Parser TElement     
 element = try $ do
   space
-  node <|> text
+  node <|> text -- <|> comment
   
 template :: Parser TElement
 template = do
