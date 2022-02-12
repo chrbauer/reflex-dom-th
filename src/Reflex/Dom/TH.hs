@@ -1,9 +1,12 @@
 -- | 
 
-module Reflex.Dom.TH where
+module Reflex.Dom.TH
+  (dom, domFile)
+where
 
 
 import Text.Megaparsec.Error
+import System.Directory 
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
@@ -12,6 +15,8 @@ import Language.Haskell.TH.Syntax
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic
 import qualified Data.Map as M
+
+
 
 
 instantiate :: TElement -> ExpQ
@@ -41,6 +46,9 @@ dom = QuasiQuoter
 
 domFile :: FilePath -> Q Exp
 domFile path = do
+  runIO $ do
+     cwd <- getCurrentDirectory
+     putStrLn cwd
   str <- runIO (readFile path)
   addDependentFile path
   case parseTemplate "" str of

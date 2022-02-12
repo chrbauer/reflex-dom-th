@@ -31,7 +31,8 @@ library
   default-extensions: TemplateHaskell
   build-depends:
               base
-            , containers  
+            , containers
+            , directory
             , megaparsec
             , reflex-dom-core
             , template-haskell
