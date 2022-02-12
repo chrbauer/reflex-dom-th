@@ -23,7 +23,9 @@ node  (TElement name [] cs) = [| el name $(nodes cs)  |]
 node  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(nodes cs)  |]
 node  (TText "") = [| blank |]
 node  (TText txt) = [| text txt |]
+node  (TWidget x) = unboundVarE $ mkName x
 node  (TComment txt) = [| comment txt |]
+
 
 nodes :: [TElement] -> ExpQ
 nodes [] = [| blank |]

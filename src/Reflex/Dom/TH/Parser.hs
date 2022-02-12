@@ -22,6 +22,7 @@ type Attributes = [(String, String)]
 data TElement = TElement TTag Attributes [TElement]
                | TText String
                | TComment String
+               | TWidget String
                deriving Show
 
 
@@ -58,11 +59,15 @@ node = do
   childs <- manyTill element (closeTag tag)
   return $ TElement tag attrs childs
 
+
+widget :: Parser TElement
+widget =  TWidget <$> (string "{{" *> manyTill anySingle (string "}}"))
+
 text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$> some (satisfy (/= '<'))
 
 element :: Parser TElement     
-element = (comment <|>  node <|> text) <* space
+element = (comment <|>  node <|> widget <|> text) <* space
   
 template :: Parser [TElement]
 template = do
