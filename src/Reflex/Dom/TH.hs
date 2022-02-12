@@ -18,6 +18,7 @@ instantiate  (TElement name [] cs) = [| el name $(childs cs)  |]
 instantiate  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(childs cs)  |]
 instantiate  (TText "") = [| blank |]
 instantiate  (TText txt) = [| text txt |]
+instantiate  (TComment txt) = [| comment txt |]
 
 childs :: [TElement] -> ExpQ
 childs [] = [| blank |]

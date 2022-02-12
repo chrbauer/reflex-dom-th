@@ -68,7 +68,7 @@ text = do
 element :: Parser TElement     
 element = try $ do
   space
-  node <|> text -- <|> comment
+  node <|> text  <|> comment
   
 template :: Parser TElement
 template = do
