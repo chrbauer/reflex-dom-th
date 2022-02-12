@@ -6,7 +6,6 @@ where
 
 
 import Text.Megaparsec.Error
-import System.Directory 
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
@@ -19,24 +18,24 @@ import qualified Data.Map as M
 
 
 
-instantiate :: TElement -> ExpQ
-instantiate  (TElement name [] cs) = [| el name $(childs cs)  |]
-instantiate  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(childs cs)  |]
-instantiate  (TText "") = [| blank |]
-instantiate  (TText txt) = [| text txt |]
-instantiate  (TComment txt) = [| comment txt |]
+node :: TElement -> ExpQ
+node  (TElement name [] cs) = [| el name $(nodes cs)  |]
+node  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(nodes cs)  |]
+node  (TText "") = [| blank |]
+node  (TText txt) = [| text txt |]
+node  (TComment txt) = [| comment txt |]
 
-childs :: [TElement] -> ExpQ
-childs [] = [| blank |]
-childs [x] = instantiate x
-childs (h:t) = [|  $(instantiate h) >> $(childs t) |]
+nodes :: [TElement] -> ExpQ
+nodes [] = [| blank |]
+nodes [x] = node x
+nodes (h:t) = [|  $(node h) >> $(nodes t) |]
 
 dom :: QuasiQuoter
 dom = QuasiQuoter
   { quoteExp  = \str ->
       case parseTemplate "" str of
         Left err -> fail $ errorBundlePretty err
-        Right node ->  instantiate node
+        Right result ->  nodes result
   , quotePat  = error "Usage as a parttern is not supported"
   , quoteType = error "Usage as a type is not supported"
   , quoteDec = error "Usage as a decl is not supported"
@@ -46,12 +45,9 @@ dom = QuasiQuoter
 
 domFile :: FilePath -> Q Exp
 domFile path = do
-  runIO $ do
-     cwd <- getCurrentDirectory
-     putStrLn cwd
   str <- runIO (readFile path)
   addDependentFile path
   case parseTemplate "" str of
         Left err -> fail $ errorBundlePretty err
-        Right node  ->  instantiate node
+        Right result  ->  nodes result
   

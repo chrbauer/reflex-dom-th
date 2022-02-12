@@ -66,13 +66,13 @@ element = try $ do
   space
   comment <|>  node <|> text  
   
-template :: Parser TElement
+template :: Parser [TElement]
 template = do
-  result <- element
+  result <- many element
   space
   eof
   return result
 
 
-parseTemplate :: FilePath -> String -> Either (ParseErrorBundle String Void) TElement
+parseTemplate :: FilePath -> String -> Either (ParseErrorBundle String Void) [TElement]
 parseTemplate fn = runParser template fn

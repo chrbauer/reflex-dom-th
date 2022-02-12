@@ -1,1 +1,1 @@
-TElement "div" [] [TText "hello world"]
+[TElement "div" [] [TText "hello world"]]

@@ -1,1 +1,1 @@
-TElement "div" [] [TComment " comment 2 "]
+[TElement "div" [] [TComment " comment 2 "]]
