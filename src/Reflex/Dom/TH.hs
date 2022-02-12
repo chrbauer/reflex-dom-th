@@ -7,6 +7,7 @@ import Text.Megaparsec.Error
 
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
 
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic
@@ -30,9 +31,19 @@ dom = QuasiQuoter
   { quoteExp  = \str ->
       case parseTemplate "" str of
         Left err -> fail $ errorBundlePretty err
-        Right x  ->  instantiate x
+        Right node ->  instantiate node
   , quotePat  = error "Usage as a parttern is not supported"
   , quoteType = error "Usage as a type is not supported"
   , quoteDec = error "Usage as a decl is not supported"
 
   }
+
+
+domFile :: FilePath -> Q Exp
+domFile path = do
+  str <- runIO (readFile path)
+  addDependentFile path
+  case parseTemplate "" str of
+        Left err -> fail $ errorBundlePretty err
+        Right node  ->  instantiate node
+  
