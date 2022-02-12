@@ -47,7 +47,7 @@ domFile :: FilePath -> Q Exp
 domFile path = do
   str <- runIO (readFile path)
   addDependentFile path
-  case parseTemplate "" str of
+  case parseTemplate path str of
         Left err -> fail $ errorBundlePretty err
         Right result  ->  nodes result
   

@@ -29,6 +29,7 @@ openTag :: Parser (String, Attributes)
 openTag =  
      between (char '<') (space >> char '>') $ do
        tag <- many (alphaNumChar <|> char '-')
+       space
        attrs <- attributes
        return (tag, attrs)
 
@@ -47,29 +48,26 @@ attribute = (,) <$>  (some alphaNumChar <* char '=') <*> stringLiteral
 
 
 attributes :: Parser Attributes
-attributes = many (space1 *> attribute)
+attributes = sepBy attribute space1 <* space
                      
 
 node :: Parser TElement
 node = do
   (tag, attrs) <- openTag
-  childs <- many element
   space
-  closeTag tag
+  childs <- manyTill element (closeTag tag)
   return $ TElement tag attrs childs
 
 text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$> some (satisfy (/= '<'))
 
 element :: Parser TElement     
-element = try $ do
-  space
-  comment <|>  node <|> text  
+element = (comment <|>  node <|> text) <* space
   
 template :: Parser [TElement]
 template = do
-  result <- many element
   space
+  result <- many element
   eof
   return result
 
