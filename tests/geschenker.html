@@ -1,0 +1,57 @@
+<ion-header>
+  <ion-toolbar> 
+    
+    <div class="g-row"> -
+      <img src="https://beta.geschenker.net/img/geschenker-logo.png" width="33" height="33"></img>
+      
+      <ion-title>
+	<a href="http://beta.geschenker.net">
+	  geschenker.net
+	</a>
+      </ion-title>
+      
+      <div class="g-space"></div>
+      <ion-button color="danger" href="https://app.geschenker.net">logout</ion-button> 
+    </div> 
+  </ion-toolbar> 
+</ion-header>
+<ion-content >
+  <div id="app"></div>
+  <ion-tabs id="tabs">
+    
+    <ion-tab tab="tab-schedule">
+      <ion-nav></ion-nav>
+    </ion-tab>
+
+    <ion-tab tab="tab-speaker">
+      <ion-nav></ion-nav>
+    </ion-tab>
+
+    <ion-tab tab="tab-map" component="page-map">
+      <ion-nav></ion-nav>
+    </ion-tab>
+
+    <ion-tab tab="tab-about" component="page-about">
+      <ion-nav></ion-nav>
+    </ion-tab>
+
+    <ion-tab-bar slot="bottom">
+      <ion-tab-button tab="tab-schedule">
+	<ion-icon name="home-outline"></ion-icon>
+	<ion-label>Übersicht</ion-label>
+      </ion-tab-button>
+
+      <ion-tab-button tab="tab-speaker">
+	<ion-icon name="cash-outline"></ion-icon>
+	<ion-label>Forderungen</ion-label>
+      </ion-tab-button>
+
+      <ion-tab-button tab="tab-map">
+	<ion-icon name="person-outline"></ion-icon>
+	<ion-label>Profil</ion-label>
+      </ion-tab-button>
+
+    </ion-tab-bar>
+
+  </ion-tabs>
+</ion-content>
