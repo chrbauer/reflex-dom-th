@@ -2,6 +2,7 @@
 
 module Reflex.Dom.TH.Parser
 ( TElement(..),
+  AttributeType(..),
   parseTemplate
   )
 where
@@ -15,24 +16,33 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L 
 import Data.Void
 import Control.Monad
+import Language.Haskell.TH.Syntax
 
 type Parser = Parsec Void String
 type TTag = String
-type Attributes = [(String, String)]
-data TElement = TElement TTag Attributes [TElement]
+data AttributeType = Static | Dynamic deriving (Show, Lift)
+type Attribute = (AttributeType, String, String)
+type Ref = Int
+data TElement = TElement { tTag :: TTag
+                         , tRef :: Maybe Ref
+                         , tAttrs :: [Attribute]
+                         , tChilds :: [TElement] }
                | TText String
                | TComment String
                | TWidget String
                deriving Show
 
 
-openTag :: Parser (String, Attributes)
+openTag :: Parser (String, Maybe Int, [Attribute])
 openTag =  
      between (char '<') (space >> char '>') $ do
+       ref <-  optional $ do
+         void $ char '#'
+         L.decimal
        tag <- many (alphaNumChar <|> char '-')
        space
        attrs <- attributes
-       return (tag, attrs)
+       return (tag, ref, attrs)
 
 closeTag :: String -> Parser ()
 closeTag tag = void $ between (string "</") (space >> char '>') (string tag)
@@ -44,20 +54,20 @@ comment = TComment <$> ((string "<!--") *> (manyTill anySingle (string "-->")))
 stringLiteral :: Parser String
 stringLiteral = char '\"' *> manyTill L.charLiteral (char '\"')
 
-attribute :: Parser (String, String)
-attribute = (,) <$>  (some alphaNumChar <* char '=') <*> stringLiteral
+attribute :: Parser Attribute
+attribute = (Static,,) <$>  (some alphaNumChar <* char '=') <*> stringLiteral
 
 
-attributes :: Parser Attributes
+attributes :: Parser [Attribute]
 attributes = sepBy attribute space1 <* space
                      
 
 node :: Parser TElement
 node = do
-  (tag, attrs) <- openTag
+  (tag, ref, attrs) <- openTag
   space
   childs <- manyTill element (closeTag tag)
-  return $ TElement tag attrs childs
+  return $ TElement tag ref attrs childs
 
 
 widget :: Parser TElement

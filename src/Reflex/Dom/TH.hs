@@ -17,10 +17,9 @@ import qualified Data.Map as M
 
 
 
-
 node :: TElement -> ExpQ
-node  (TElement name [] cs) = [| el name $(nodes cs)  |]
-node  (TElement name attr cs) = [| elAttr name (M.fromList attr) $(nodes cs)  |]
+node  (TElement name Nothing [] cs) = [| el name $(nodes cs)  |]
+node  (TElement name Nothing attr cs) = [| elAttr name (M.fromList [ (k, v) | (Static, k, v) <- attr ]) $(nodes cs)  |]
 node  (TText "") = [| blank |]
 node  (TText txt) = [| text txt |]
 node  (TWidget x) = unboundVarE $ mkName x
