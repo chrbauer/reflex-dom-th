@@ -28,9 +28,10 @@ library
   exposed-modules:
           Reflex.Dom.TH.Parser
         , Reflex.Dom.TH
-  default-extensions: TemplateHaskell, TupleSections, DeriveLift
+  default-extensions: TemplateHaskell, TupleSections, DeriveLift, RecordWildCards, QuasiQuotes, OverloadedStrings
   build-depends:
               base
+            , array
             , containers
             , megaparsec
             , reflex-dom-core

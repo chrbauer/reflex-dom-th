@@ -35,13 +35,14 @@ data TElement = TElement { tTag :: TTag
 
 openTag :: Parser (String, Maybe Int, [Attribute])
 openTag =  
-     between (char '<') (space >> char '>') $ do
-       ref <-  optional $ do
-         void $ char '#'
-         L.decimal
+     between (char '<') (char '>') $ do
        tag <- many (alphaNumChar <|> char '-')
        space
+       ref <-  optional $ do
+         void $ char '#'
+         L.decimal <* space
        attrs <- attributes
+       space
        return (tag, ref, attrs)
 
 closeTag :: String -> Parser ()
