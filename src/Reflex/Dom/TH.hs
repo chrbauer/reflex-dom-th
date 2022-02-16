@@ -66,21 +66,6 @@ compile (elem:etail) acc inRefs =
                            
 
 
-node :: TElement -> ExpQ
-node  (TElement name Nothing [] cs) = [| el name $ do $(nodes cs)  |]
-node  (TElement name (Just i) [] cs) = [| fst <$> el' name $(nodes cs)  |]
-node  (TElement name Nothing attr cs) = [| elAttr name (M.fromList [ (k, v) | (Static, k, v) <- attr ]) $(nodes cs)  |]
-node  (TText "") = [| blank |]
-node  (TText txt) = [| text txt |]
-node  (TWidget x) = unboundVarE $ mkName x
-node  (TComment txt) = [| comment txt |]
-
-
-nodes :: [TElement] -> ExpQ
-nodes [] = [| blank |]
-nodes [x] = node x
-nodes (h:t) = [|  $(node h) >> $(nodes t) |]
-
 opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
 opt var = maybe (runQ [p| () |]) $ varP . var
 
@@ -99,22 +84,25 @@ cnodes  var [elem] = cnode var elem
 cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag attr $(cnodes var childs)|]
+cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag (M.fromList attr) $(cnodes var childs)|]
 cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  el' tag attr $(cnodes var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
 cnode _ (CWidget x) = unboundVarE $ mkName x
 cnode _ (CComment txt) = [| comment txt |]
 
+domExp :: [TElement] -> Q Exp
+domExp result =
+  let (cns, out) = compile result [] [] in do
+    varNames <-  listArray (0, length out) <$> mapM (\ r -> newName ("r" ++ show r)) out
+    cnodes (varNames !) cns
+
 dom :: QuasiQuoter
 dom = QuasiQuoter
   { quoteExp  = \str ->
       case parseTemplate "" str of
         Left err -> fail $ errorBundlePretty err
-        Right result -> 
-          let (cns, out) = compile result [] [] in do
-            varNames <-  listArray (0, length out) <$> mapM (\ r -> newName ("r" ++ show r)) out
-            cnodes (varNames !) cns
+        Right result -> domExp result
   , quotePat  = error "Usage as a parttern is not supported"
   , quoteType = error "Usage as a type is not supported"
   , quoteDec = error "Usage as a decl is not supported"
@@ -128,5 +116,5 @@ domFile path = do
   addDependentFile path
   case parseTemplate path str of
         Left err -> fail $ errorBundlePretty err
-        Right result  ->  nodes result
+        Right result  ->  domExp result
   
