@@ -76,8 +76,9 @@ clambda var mref crefs =  lamE [tupP [ opt var mref
 
 cnodes :: (Ref -> Name) -> [CElement] ->  ExpQ
 cnodes _ []  = [| blank |]
-cnodes var [elem@(CElement _ _ crefs orefs mref _ _)]  = [| $(cnode var elem) >>=  $(clambda var mref crefs
-                                                                                        (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
+cnodes var [elem@(CElement _ _ crefs orefs mref _ _)]  
+    | null orefs = [| $(cnode var elem) |]
+    | otherwise = [| $(cnode var elem) >>=  $(clambda var mref crefs                                                                                        (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
 cnodes var (elem@(CElement _ _ crefs orefs mref _ _):rest)  = [| $(cnode var elem) >>=  $(clambda var mref crefs (cnodes var rest)) |]
                                                          
 cnodes  var [elem] = cnode var elem
@@ -85,7 +86,7 @@ cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
 cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag (M.fromList attr) $(cnodes var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  el' tag attr $(cnodes var childs) |]
+cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  elAttr' tag attr $(cnodes var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
 cnode _ (CWidget x) = unboundVarE $ mkName x
