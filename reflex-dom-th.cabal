@@ -3,23 +3,28 @@ name:               reflex-dom-th
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis: reflex-dom-th transpiles HTML templates to haskell code for @reflex-dom@
 
 -- A longer description of the package.
--- description:
-
+description:
+      Reflex-DOM (see @reflex-dom@) is a very powerfull web framework for functional reactive programming (FRP).
+      Web pages itself are written in HTML.
+      .
+      @reflex-dom-th@ combine th power of these two techniques by transpiling HTML templates to Haskell.
+      
+        
+Stability: Experimental
 -- A URL where users can report bugs.
--- bug-reports:
+bug-reports: https://github.com/chrbauer/reflex-dom-th/issues
 
--- The license under which the package is released.
--- license:
+license: BSD-3
 author:             Christoph Bauer
 maintainer:         mail@christoph-bauer.net
 
 -- A copyright notice.
 -- copyright:
--- category:
-extra-source-files: CHANGELOG.md
+category: FRP, Web, GUI, HTML, Javascript, Reactive, Reactivity, User Interfaces, User-interface
+extra-source-files: CHANGELOG.md, README.md
 
 library
   build-depends:
@@ -67,3 +72,11 @@ test-suite test-reflex-dom-th
                     
           --, tasty-hspec
           
+executable ref-dom-th-example
+  hs-source-dirs: example
+  main-is: Main.hs
+  build-depends:
+      base >= 4 && < 5
+    , reflex-dom
+
+    
