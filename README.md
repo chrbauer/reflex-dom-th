@@ -20,7 +20,7 @@ You can also put the html in a external file and include it with
 
 It it possible to have multiple elements and attributes
 
-   [dom|<ul class="list">
+    [dom|<ul class="list">
           <li>Item1</div>
 	  <li>Item1</div>
 	</ul> |]
