@@ -1,7 +1,7 @@
 -- | 
 
 module Reflex.Dom.TH
-  (dom, domFile, merge)
+  (dom, domFile)
 where
 
 
