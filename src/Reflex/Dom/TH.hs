@@ -20,6 +20,7 @@ import Data.List (insert)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Array
+import Instances.TH.Lift
 
 type Ref = Int
 data CElement = CElement { cTag :: String
@@ -27,7 +28,7 @@ data CElement = CElement { cTag :: String
                          , cChildRefs :: [Ref]
                          , cOutRefs :: [Ref]
                          , cMyRef :: Maybe Ref
-                         , cAttrs :: [(String, String)]
+                         , cAttrs :: Map Text Text
                          , cChilds :: [CElement] }
                | CText String
                | CComment String
@@ -55,7 +56,7 @@ compile ((TElement {..}):etail) acc inRefs =
     (childs, childRefs) = compile tChilds [] []
     outRefs = maybe id insert tRef childRefs
     expRefs = merge inRefs outRefs
-    attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
+    attrs = M.fromList [ (T.pack k, T.pack v) | (Static, k, v) <- tAttrs ]
 compile (elem:etail) acc inRefs =
       compile etail (toC elem : acc) inRefs
   where
@@ -83,10 +84,9 @@ cnodes var (elem@(CElement _ _ crefs orefs mref _ _):rest)  = [| $(cnode var ele
                                                          
 cnodes  var [elem] = cnode var elem
 cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
-
 cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag (M.fromList attr) $(cnodes var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  elAttr' tag (M.fromList attr) $(cnodes var childs) |]
+cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag attr $(cnodes var childs)|]
+cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  elAttr' tag attr $(cnodes var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
 cnode _ (CWidget x) = unboundVarE $ mkName x
