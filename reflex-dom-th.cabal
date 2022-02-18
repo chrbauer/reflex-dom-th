@@ -41,7 +41,6 @@ library
             , megaparsec
             , reflex-dom-core
             , template-haskell
-            , th-lift-instances
             , text
   ghc-options: -Wall -fwarn-tabs
   hs-source-dirs:   src

@@ -20,7 +20,6 @@ import Data.List (insert)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Array
-import Instances.TH.Lift
 
 type Ref = Int
 data CElement = CElement { cTag :: String
@@ -28,7 +27,7 @@ data CElement = CElement { cTag :: String
                          , cChildRefs :: [Ref]
                          , cOutRefs :: [Ref]
                          , cMyRef :: Maybe Ref
-                         , cAttrs :: Map Text Text
+                         , cAttrs :: [(String, String)]
                          , cChilds :: [CElement] }
                | CText String
                | CComment String
@@ -56,7 +55,7 @@ compile ((TElement {..}):etail) acc inRefs =
     (childs, childRefs) = compile tChilds [] []
     outRefs = maybe id insert tRef childRefs
     expRefs = merge inRefs outRefs
-    attrs = M.fromList [ (T.pack k, T.pack v) | (Static, k, v) <- tAttrs ]
+    attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
 compile (elem:etail) acc inRefs =
       compile etail (toC elem : acc) inRefs
   where
@@ -75,18 +74,29 @@ clambda var mref crefs =  lamE [tupP [ opt var mref
                            , tupP $ map (varP . var) crefs]]
 
 
+
+
+elWithAttr tag [] = [| el tag |]
+elWithAttr tag [("class", cl)] = [| elClass tag cl |]
+elWithAttr tag attr = [| elAttr tag (M.fromList attr) |]
+
+el'WithAttr tag [] = [| el' tag |]
+el'WithAttr tag [("class", cl)] = [| elClass' tag cl |]
+el'WithAttr tag attr = [| elAttr' tag (M.fromList attr) |]
+
+
 cnodes :: (Ref -> Name) -> [CElement] ->  ExpQ
 cnodes _ []  = [| blank |]
 cnodes var [elem@(CElement _ _ crefs orefs mref _ _)]  
     | null orefs = [| $(cnode var elem) |]
     | otherwise = [| $(cnode var elem) >>=  $(clambda var mref crefs                                                                                        (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
 cnodes var (elem@(CElement _ _ crefs orefs mref _ _):rest)  = [| $(cnode var elem) >>=  $(clambda var mref crefs (cnodes var rest)) |]
-                                                         
 cnodes  var [elem] = cnode var elem
 cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
+
 cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr childs) = [|  elAttr tag attr $(cnodes var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr childs) = [|  elAttr' tag attr $(cnodes var childs) |]
+cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cnodes var childs)|]
+cnode var (CElement tag _ _ _ (Just _) attr childs) = [| $(el'WithAttr tag attr) $(cnodes var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
 cnode _ (CWidget x) = unboundVarE $ mkName x
