@@ -3,7 +3,7 @@ name:               reflex-dom-th
 version:            0.2.0.0
 
 -- A short (one-line) description of the package.
-synopsis: reflex-dom-th transpiles HTML templates to haskell code for @reflex-dom@
+synopsis: reflex-dom-th transpiles HTML templates to haskell code for reflex-dom
 
 -- A longer description of the package.
 description:
@@ -16,7 +16,7 @@ description:
 Stability: Experimental
 -- A URL where users can report bugs.
 bug-reports: https://github.com/chrbauer/reflex-dom-th/issues
-
+homepage:  https://github.com/chrbauer/reflex-dom-th
 license: BSD-3-Clause
 author:             Christoph Bauer
 maintainer:         mail@christoph-bauer.net

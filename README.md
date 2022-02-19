@@ -33,7 +33,7 @@ It it possible to have multiple elements and attributes
      </ul> |]
 ```     
 
-Dynamic content can be injected two curly braces
+Dynamic content can be injected between two curly braces. It will reference an unbound variable. It is not a haskell expression. Keeping haskell out of the template will give you better error messages.
 
 ```
 [dom|<ul class="list">
