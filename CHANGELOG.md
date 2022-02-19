@@ -2,7 +2,9 @@
 
 ## 0.2.0.0 -- 2022-02-18
 
-* specialize to el-variants
+* specialization to el-variants
+* parse widgets inside texts
+
 
 ## 0.1.0.0 -- 2022-02-18
 

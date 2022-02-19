@@ -75,7 +75,7 @@ widget :: Parser TElement
 widget =  TWidget <$> (string "{{" *> manyTill anySingle (string "}}"))
 
 text :: Parser TElement
-text =  TText <$>  dropWhileEnd isSpace <$> some (satisfy (/= '<'))
+text =  TText <$>  dropWhileEnd isSpace <$>  someTill anySingle (eof <|> lookAhead (char '<' *> return () <|> string "{{" *> return () ))
 
 element :: Parser TElement     
 element = (comment <|>  node <|> widget <|> text) <* space

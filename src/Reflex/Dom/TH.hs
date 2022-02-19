@@ -90,8 +90,8 @@ cnodes _ []  = [| blank |]
 cnodes var [elem@(CElement _ _ crefs orefs mref _ _)]  
     | null orefs = [| $(cnode var elem) |]
     | otherwise = [| $(cnode var elem) >>=  $(clambda var mref crefs                                                                                        (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
-cnodes var (elem@(CElement _ _ crefs orefs mref _ _):rest)  = [| $(cnode var elem) >>=  $(clambda var mref crefs (cnodes var rest)) |]
-cnodes  var [elem] = cnode var elem
+cnodes var (elem@(CElement _ _ crefs _ mref _ _):rest)  = [| $(cnode var elem) >>=  $(clambda var mref crefs (cnodes var rest)) |]
+cnodes  var [e] = cnode var e
 cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
