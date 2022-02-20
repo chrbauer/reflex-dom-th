@@ -77,7 +77,7 @@ opt var = maybe (runQ [p| () |]) $ varP . var
 clambda :: (Ref -> Name) -> ChildResult -> ExpQ -> ExpQ
 clambda _    CREmpty       =  lamE [tupP []]
 clambda var (CRSimple v)  =  lamE [tupP [varP $ var v]]
-
+clambda var (CRTuple Nothing crefs)  =  lamE [tupP $ map (varP . var) crefs]
 clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
                                                 , tupP $ map (varP . var) crefs]]
 
