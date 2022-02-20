@@ -22,16 +22,19 @@ import qualified Data.Text as T
 import Data.Array
 
 type Ref = Int
+data Chain = CBind CElement (Maybe Ref) [Ref] Chain | CResult [Ref]
+  deriving Show
+
 data CElement = CElement { cTag :: String
                          , cSiblingsRefs :: [Ref]
                          , cChildRefs :: [Ref]
                          , cOutRefs :: [Ref]
                          , cMyRef :: Maybe Ref
                          , cAttrs :: [(String, String)]
-                         , cChilds :: [CElement] }
+                         , cChilds :: Chain }
                | CText String
                | CComment String
-               | CWidget String
+               | CWidget String (Maybe Ref)
                deriving Show
 
 merge :: Ord a => [a] -> [a] -> [a]
@@ -46,23 +49,26 @@ merge  a@(ah:at) b@(bh:bt)
 
 
 
-compile :: [TElement] -> [CElement] -> [Ref] -> ([CElement], [Ref])
-compile [] acc inRefs = (reverse acc, inRefs)
-compile ((TElement {..}):etail) acc inRefs =
-      compile etail (elem':acc) expRefs
+compile :: [TElement] -> [Ref] -> Chain
+compile [] inRefs = CResult inRefs
+compile ((TElement {..}):etail) inRefs =
+      CBind elem' tRef childRefs (compile etail expRefs)
   where
-    elem' = CElement tTag inRefs childRefs outRefs tRef attrs childs
-    (childs, childRefs) = compile tChilds [] []
-    outRefs = maybe id insert tRef childRefs
+    elem' = CElement tTag inRefs childRefs outRefs tRef attrs childChain
+    childChain = compile tChilds []
+    childRefs = chainOut childChain
+    outRefs = maybe id insert tRef childRefs 
     expRefs = merge inRefs outRefs
     attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
-compile (elem:etail) acc inRefs =
-      compile etail (toC elem : acc) inRefs
+
+compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) r expRefs (compile etail expRefs)
+    where expRefs = maybe id insert r inRefs
+compile (e:etail) inRefs =
+      CBind (toC e) Nothing inRefs (compile etail inRefs)
   where
     toC (TText text) = CText text
     toC (TComment comment) = CComment comment
-    toC (TWidget widget) = CWidget widget
-    toC _ = undefined
+    toC _ = error "internal"
                            
 
 
@@ -75,38 +81,52 @@ clambda var mref crefs =  lamE [tupP [ opt var mref
 
 
 
-
+elWithAttr :: String -> [(String, String)] -> ExpQ
 elWithAttr tag [] = [| el tag |]
 elWithAttr tag [("class", cl)] = [| elClass tag cl |]
 elWithAttr tag attr = [| elAttr tag (M.fromList attr) |]
 
+el'WithAttr :: String -> [(String, String)] -> ExpQ
 el'WithAttr tag [] = [| el' tag |]
 el'WithAttr tag [("class", cl)] = [| elClass' tag cl |]
 el'WithAttr tag attr = [| elAttr' tag (M.fromList attr) |]
 
 
-cnodes :: (Ref -> Name) -> [CElement] ->  ExpQ
-cnodes _ []  = [| blank |]
-cnodes var [elem@(CElement _ _ crefs orefs mref _ _)]  
-    | null orefs = [| $(cnode var elem) |]
-    | otherwise = [| $(cnode var elem) >>=  $(clambda var mref crefs                                                                                        (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
-cnodes var (elem@(CElement _ _ crefs _ mref _ _):rest)  = [| $(cnode var elem) >>=  $(clambda var mref crefs (cnodes var rest)) |]
+cchain :: (Ref -> Name) -> Chain ->  ExpQ
+cchain var (CResult orefs)  = (appE (varE 'return) (tupE $ map (varE . var) orefs))
+cchain var (CBind ce mref crefs rest)  = [| $(cnode var ce) >>=  $(clambda var mref crefs (cchain var rest)) |]
+
+{-
+cnodes :: (Ref -> Name) -> Chain ->  ExpQ
+
+cnodes var [e@(CElement _ _ crefs orefs mref _ _)]  
+    | null orefs = [| $(cnode var e) |]
+    | otherwise = [| $(cnode var e) >>=  $(clambda var mref crefs
+                                             (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
+cnodes var (e@(CElement _ _ crefs _ mref _ _):rest)  = [| $(cnode var e) >>=  $(clambda var mref crefs (cnodes var rest)) |]
 cnodes  var [e] = cnode var e
 cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
+-}
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cnodes var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr childs) = [| $(el'WithAttr tag attr) $(cnodes var childs) |]
+cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cchain var childs)|]
+cnode var (CElement tag _ _ _ (Just _) attr childs) = [| $(el'WithAttr tag attr) $(cchain var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
-cnode _ (CWidget x) = unboundVarE $ mkName x
+cnode _ (CWidget x _) = unboundVarE $ mkName x
 cnode _ (CComment txt) = [| comment txt |]
+
+chainOut :: Chain -> [Ref] 
+chainOut (CBind _ _ _ next) = chainOut next
+chainOut (CResult out) = out
 
 domExp :: [TElement] -> Q Exp
 domExp result =
-  let (cns, out) = compile result [] [] in do
+  let refchain = compile result []
+      out = chainOut refchain
+  in do
     varNames <-  listArray (0, length out) <$> mapM (\ r -> newName ("r" ++ show r)) out
-    cnodes (varNames !) cns
+    cchain (varNames !) refchain
 
 dom :: QuasiQuoter
 dom = QuasiQuoter

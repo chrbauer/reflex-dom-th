@@ -29,24 +29,27 @@ data TElement = TElement { tTag :: TTag
                          , tChilds :: [TElement] }
                | TText String
                | TComment String
-               | TWidget String
+               | TWidget String (Maybe Ref)
                deriving Show
 
+refOpt :: Parser (Maybe Int)
+refOpt = optional . try $ do
+      space1
+      void $ char '#'
+      L.decimal <* space
 
 openTag :: Parser (String, Maybe Int, [Attribute])
 openTag =  
      between (char '<') (char '>') $ do
        tag <- many (alphaNumChar <|> char '-')
+       ref <- refOpt
        space
-       ref <-  optional $ do
-         void $ char '#'
-         L.decimal <* space
        attrs <- attributes
        space
        return (tag, ref, attrs)
 
 closeTag :: String -> Parser ()
-closeTag tag = void $ between (string "</") (space >> char '>') (string tag)
+closeTag tag = void $ between (string "</" >> space) (char '>') (string tag >> space)
 
 comment :: Parser TElement
 comment = TComment <$> ((string "<!--") *> (manyTill anySingle (string "-->")))
@@ -70,9 +73,11 @@ node = do
   childs <- manyTill element (closeTag tag)
   return $ TElement tag ref attrs childs
 
+varName :: Parser String
+varName = (:) <$> lowerChar <*> many alphaNumChar
 
 widget :: Parser TElement
-widget =  TWidget <$> (string "{{" *> manyTill anySingle (string "}}"))
+widget =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
 
 text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$>  someTill anySingle (lookAhead (char '<' *> return () <|> string "{{" *> return () ))

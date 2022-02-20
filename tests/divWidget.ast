@@ -1,1 +1,1 @@
-[TElement {tTag = "div", tRef = Nothing, tAttrs = [], tChilds = [TWidget "widget"]}]
+[TElement {tTag = "div", tRef = Nothing, tAttrs = [], tChilds = [TWidget "widget" Nothing]}]
