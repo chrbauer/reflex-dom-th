@@ -18,7 +18,14 @@ import Data.List (insert)
 import Data.Array
 
 type Ref = Int
-data Chain = CBind CElement (Maybe Ref) [Ref] Chain | CResult [Ref]
+
+data ChildResult =
+   CREmpty
+ | CRSimple Ref
+ | CRTuple (Maybe Ref) [Ref]
+ deriving Show
+
+data Chain = CBind CElement ChildResult Chain | CResult [Ref]
   deriving Show
 
 data CElement = CElement { cTag :: String
@@ -44,7 +51,7 @@ merge  a@(ah:at) b@(bh:bt)
 compile :: [TElement] -> [Ref] -> Chain
 compile [] inRefs = CResult inRefs
 compile ((TElement {..}):etail) inRefs =
-      CBind elem' tRef childRefs (compile etail expRefs)
+      CBind elem' (CRTuple tRef childRefs) (compile etail expRefs)
   where
     elem' = CElement tTag inRefs childRefs outRefs tRef attrs childChain
     childChain = compile tChilds []
@@ -53,10 +60,10 @@ compile ((TElement {..}):etail) inRefs =
     expRefs = merge inRefs outRefs
     attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
 
-compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) r [] (compile etail expRefs)
+compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) (maybe CREmpty CRSimple r) (compile etail expRefs)
     where expRefs = maybe id insert r inRefs
 compile (e:etail) inRefs =
-      CBind (toC e) Nothing inRefs (compile etail inRefs)
+      CBind (toC e) CREmpty (compile etail inRefs)
   where
     toC (TText t) = CText t
     toC (TComment c) = CComment c
@@ -67,10 +74,12 @@ compile (e:etail) inRefs =
 opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
 opt var = maybe (runQ [p| () |]) $ varP . var
 
-clambda :: (Ref -> Name) -> Maybe Ref -> [Ref] -> ExpQ -> ExpQ
-clambda var Nothing crefs   =  lamE [tupP $ map (varP . var) crefs ]
-clambda var mref crefs =  lamE [tupP [ opt var mref
-                           , tupP $ map (varP . var) crefs]]
+clambda :: (Ref -> Name) -> ChildResult -> ExpQ -> ExpQ
+clambda _    CREmpty       =  lamE [tupP []]
+clambda var (CRSimple v)  =  lamE [tupP [varP $ var v]]
+
+clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
+                                                , tupP $ map (varP . var) crefs]]
 
 
 
@@ -87,8 +96,7 @@ el'WithAttr tag attr = [| elAttr' tag (M.fromList attr) |]
 
 cchain :: (Ref -> Name) -> Chain ->  ExpQ
 cchain var (CResult orefs)  = (appE (varE 'return) (tupE $ map (varE . var) orefs))
-cchain var (CBind ce mref crefs rest)  = [| $(cnode var ce) >>=  $(clambda var mref crefs (cchain var rest)) |]
-
+cchain var (CBind ce cres rest)  = [| $(cnode var ce) >>=  $(clambda var cres (cchain var rest)) |]
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
 cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cchain var childs)|]
@@ -99,7 +107,7 @@ cnode _ (CWidget x _) = unboundVarE $ mkName x
 cnode _ (CComment txt) = [| comment txt |]
 
 chainOut :: Chain -> [Ref] 
-chainOut (CBind _ _ _ next) = chainOut next
+chainOut (CBind _ _ next) = chainOut next
 chainOut (CResult out) = out
 
 domExp :: [TElement] -> Q Exp
