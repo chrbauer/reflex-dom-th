@@ -63,7 +63,7 @@ attribute = (Static,,) <$>  (some (alphaNumChar <|> char '-') <* char '=') <*> s
 
 
 attributes :: Parser [Attribute]
-attributes = sepBy attribute space1 <* space
+attributes = sepEndBy attribute space1 <* space
                      
 
 node :: Parser TElement
