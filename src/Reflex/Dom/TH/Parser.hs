@@ -59,7 +59,7 @@ stringLiteral :: Parser String
 stringLiteral = char '\"' *> manyTill L.charLiteral (char '\"')
 
 attribute :: Parser Attribute
-attribute = (Static,,) <$>  (some alphaNumChar <* char '=') <*> stringLiteral
+attribute = (Static,,) <$>  (some (alphaNumChar <|> char '-') <* char '=') <*> stringLiteral
 
 
 attributes :: Parser [Attribute]

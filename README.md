@@ -49,9 +49,10 @@ Dynamic content can be injected between two curly braces. It will reference an u
 To bind events to the elements it is possible to extract get the elements as a result. The reference number is the position in the result tuple.
 
 ```
-(li1, li2, ul) <- [dom|<ul #2 class="list">
-                         <li #0>Item1</div>
-                         <li #1>Item1</div>
-                       </ul> |]
+(li1, li2, ul, w) <- [dom|<ul #2 class="list">
+                           <li #0>Item1</div>
+                           <li #1>Item1</div>
+	                   <li>{{widget #3}}</div>
+                          </ul> |]
 ```		       
 
