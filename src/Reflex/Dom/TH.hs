@@ -75,14 +75,11 @@ opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
 opt var = maybe (runQ [p| () |]) $ varP . var
 
 clambda :: (Ref -> Name) -> ChildResult -> ExpQ -> ExpQ
-clambda _    CREmpty       =  lamE [tupP []]
+clambda _    CREmpty       =  lamE [wildP]
 clambda var (CRSimple v)  =  lamE [tupP [varP $ var v]]
 clambda var (CRTuple Nothing crefs)  =  lamE [tupP $ map (varP . var) crefs]
 clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
                                                 , tupP $ map (varP . var) crefs]]
-
-
-
 elWithAttr :: String -> [(String, String)] -> ExpQ
 elWithAttr tag [] = [| el tag |]
 elWithAttr tag [("class", cl)] = [| elClass tag cl |]
