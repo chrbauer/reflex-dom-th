@@ -14,11 +14,7 @@ import Language.Haskell.TH.Syntax
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic 
 import qualified Data.Map as M
-import Data.Map (Map)
---import Data.Maybe
 import Data.List (insert)
-import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Array
 
 type Ref = Int
@@ -45,10 +41,6 @@ merge  a@(ah:at) b@(bh:bt)
   | otherwise = ah : merge at b
 
 
---  do (r1, (r1a, r1b)) <- el1 $ el1a >>= \ r1a -> el1b >>= \r1b -> return (r1a, r1b)
-
-
-
 compile :: [TElement] -> [Ref] -> Chain
 compile [] inRefs = CResult inRefs
 compile ((TElement {..}):etail) inRefs =
@@ -61,13 +53,13 @@ compile ((TElement {..}):etail) inRefs =
     expRefs = merge inRefs outRefs
     attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
 
-compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) r expRefs (compile etail expRefs)
+compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) r [] (compile etail expRefs)
     where expRefs = maybe id insert r inRefs
 compile (e:etail) inRefs =
       CBind (toC e) Nothing inRefs (compile etail inRefs)
   where
-    toC (TText text) = CText text
-    toC (TComment comment) = CComment comment
+    toC (TText t) = CText t
+    toC (TComment c) = CComment c
     toC _ = error "internal"
                            
 
@@ -75,6 +67,7 @@ compile (e:etail) inRefs =
 opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
 opt var = maybe (runQ [p| () |]) $ varP . var
 
+clambda :: (Ref -> Name) -> Maybe Ref -> [Ref] -> ExpQ -> ExpQ
 clambda var Nothing crefs   =  lamE [tupP $ map (varP . var) crefs ]
 clambda var mref crefs =  lamE [tupP [ opt var mref
                            , tupP $ map (varP . var) crefs]]
@@ -96,17 +89,6 @@ cchain :: (Ref -> Name) -> Chain ->  ExpQ
 cchain var (CResult orefs)  = (appE (varE 'return) (tupE $ map (varE . var) orefs))
 cchain var (CBind ce mref crefs rest)  = [| $(cnode var ce) >>=  $(clambda var mref crefs (cchain var rest)) |]
 
-{-
-cnodes :: (Ref -> Name) -> Chain ->  ExpQ
-
-cnodes var [e@(CElement _ _ crefs orefs mref _ _)]  
-    | null orefs = [| $(cnode var e) |]
-    | otherwise = [| $(cnode var e) >>=  $(clambda var mref crefs
-                                             (appE (varE 'return) (tupE $ map (varE . var) orefs))) |]
-cnodes var (e@(CElement _ _ crefs _ mref _ _):rest)  = [| $(cnode var e) >>=  $(clambda var mref crefs (cnodes var rest)) |]
-cnodes  var [e] = cnode var e
-cnodes var (h:t)  = [|  $(cnode var h) >> $(cnodes var t) |]
--}
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
 cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cchain var childs)|]
