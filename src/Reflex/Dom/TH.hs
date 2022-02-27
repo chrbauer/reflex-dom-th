@@ -54,7 +54,7 @@ compile [] inRefs = CResult inRefs
 compile ((TElement {..}):etail) inRefs =
       CBind elem' (CRTuple tRef childRefs) (compile etail expRefs)
   where
-    elem' = CElement tTag inRefs childRefs outRefs tRef tAttrs childChain
+    elem' = CElement tTag inRefs childRefs outRefs tRef tAttrs tDynAttrs childChain
     childChain = compile tChilds []
     childRefs = chainOut childChain
     outRefs = maybe id insert tRef childRefs 
@@ -88,14 +88,14 @@ elWithAttr tag [] Nothing = [| el tag |]
 elWithAttr tag [] (Just dynAttr) = [| elDynAttr tag $(unboundVarE $ mkName dynAttr) |]
 elWithAttr tag [("class", cl)] Nothing = [| elClass tag cl |]
 elWithAttr tag attr Nothing = [| elAttr tag (M.fromList attr) |]
-elWithAttr tag attr (Just dynAttr) = [| elDynAttr tag (flip M.union (M.fromList attr) <$> dnyAttr) |]
+elWithAttr tag attr (Just dynAttr) = [| elDynAttr tag (flip M.union (M.fromList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
-el'WithAttr :: String -> [(String, String)] -> ExpQ
+el'WithAttr :: String -> [(String, String)] -> Maybe String  -> ExpQ
 el'WithAttr tag [] Nothing = [| el' tag |]
 el'WithAttr tag [] (Just dynAttr) = [| elDynAttr' tag $(unboundVarE $ mkName dynAttr) |]
 el'WithAttr tag [("class", cl)] Nothing = [| elClass' tag cl |]
 el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromList attr) |]
-el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromList attr) <$> dnyAttr) |]
+el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
 
 cchain :: (Ref -> Name) -> Chain ->  ExpQ
@@ -103,8 +103,8 @@ cchain var (CResult orefs)  = (appE (varE 'return) (tupE $ map (varE . var) oref
 cchain var (CBind ce cres rest)  = [| $(cnode var ce) >>=  $(clambda var cres (cchain var rest)) |]
 
 cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr childs) = [|  $(elWithAttr tag attr) $(cchain var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr childs) = [| $(el'WithAttr tag attr) $(cchain var childs) |]
+cnode var (CElement tag _ _ _ Nothing attr tDynAttrs childs) = [|  $(elWithAttr tag attr tDynAttrs) $(cchain var childs)|]
+cnode var (CElement tag _ _ _ (Just _) attr tDynAttrs childs) = [| $(el'WithAttr tag attr tDynAttrs) $(cchain var childs) |]
 cnode _ (CText "") = [| blank |]
 cnode _ (CText txt) = [| text txt |]
 cnode _ (CWidget x _) = unboundVarE $ mkName x

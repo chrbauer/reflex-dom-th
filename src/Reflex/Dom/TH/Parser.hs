@@ -2,7 +2,6 @@
 
 module Reflex.Dom.TH.Parser
 ( TElement(..),
-  AttributeType(..),
   parseTemplate
   )
 where
@@ -38,7 +37,7 @@ refOpt = optional . try $ do
       void $ char '#'
       L.decimal <* space
 
-openTag :: Parser (String, Maybe Int, [Attribute])
+openTag :: Parser (String, [TElement] -> TElement)
 openTag =  
      between (char '<') (char '>') $ do
        tag <- many (alphaNumChar <|> char '-')
@@ -47,8 +46,7 @@ openTag =
        attrs <- attributes
        space
        dynAttr <- optional varRef
-       space
-       return (tag, ref, attrs)
+       return $ (tag, TElement tag ref attrs dynAttr)
 
 closeTag :: String -> Parser ()
 closeTag tag = void $ between (string "</" >> space) (char '>') (string tag >> space)
@@ -70,22 +68,25 @@ attributes = sepEndBy attribute space1 <* space
 
 node :: Parser TElement
 node = do
-  (tag, ref, attrs) <- openTag
+  (tag, mkElem) <- openTag
   space
   childs <- manyTill element (closeTag tag)
-  return $ TElement tag ref attrs childs
+  return $ mkElem childs
 
 varName :: Parser String
 varName = (:) <$> lowerChar <*> many alphaNumChar
 
-varRef :: Parser TElement
-varRef =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
+varRef :: Parser String
+varRef =  string "{{" *> space *> varName <* string "}}" <* space
+
+widget :: Parser TElement
+widget =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
 
 text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$>  someTill anySingle (lookAhead (char '<' *> return () <|> string "{{" *> return () ))
 
 element :: Parser TElement     
-element = (comment <|>  node <|> varRef <|> text) <* space
+element = (comment <|>  node <|> widget <|> text) <* space
   
 template :: Parser [TElement]
 template = do
