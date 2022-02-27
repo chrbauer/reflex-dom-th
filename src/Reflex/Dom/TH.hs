@@ -34,6 +34,7 @@ data CElement = CElement { cTag :: String
                          , cOutRefs :: [Ref]
                          , cMyRef :: Maybe Ref
                          , cAttrs :: [(String, String)]
+                         , cDynAttrs :: Maybe String
                          , cChilds :: Chain }
                | CText String
                | CComment String
@@ -53,12 +54,12 @@ compile [] inRefs = CResult inRefs
 compile ((TElement {..}):etail) inRefs =
       CBind elem' (CRTuple tRef childRefs) (compile etail expRefs)
   where
-    elem' = CElement tTag inRefs childRefs outRefs tRef attrs childChain
+    elem' = CElement tTag inRefs childRefs outRefs tRef tAttrs childChain
     childChain = compile tChilds []
     childRefs = chainOut childChain
     outRefs = maybe id insert tRef childRefs 
     expRefs = merge inRefs outRefs
-    attrs = [ (k, v) | (Static, k, v) <- tAttrs ]
+
 
 compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) (maybe CREmpty CRSimple r) (compile etail expRefs)
     where expRefs = maybe id insert r inRefs
@@ -80,15 +81,21 @@ clambda var (CRSimple v)  =  lamE [tupP [varP $ var v]]
 clambda var (CRTuple Nothing crefs)  =  lamE [tupP $ map (varP . var) crefs]
 clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
                                                 , tupP $ map (varP . var) crefs]]
-elWithAttr :: String -> [(String, String)] -> ExpQ
-elWithAttr tag [] = [| el tag |]
-elWithAttr tag [("class", cl)] = [| elClass tag cl |]
-elWithAttr tag attr = [| elAttr tag (M.fromList attr) |]
+
+                                     
+elWithAttr :: String -> [(String, String)] -> Maybe String -> ExpQ
+elWithAttr tag [] Nothing = [| el tag |]
+elWithAttr tag [] (Just dynAttr) = [| elDynAttr tag $(unboundVarE $ mkName dynAttr) |]
+elWithAttr tag [("class", cl)] Nothing = [| elClass tag cl |]
+elWithAttr tag attr Nothing = [| elAttr tag (M.fromList attr) |]
+elWithAttr tag attr (Just dynAttr) = [| elDynAttr tag (flip M.union (M.fromList attr) <$> dnyAttr) |]
 
 el'WithAttr :: String -> [(String, String)] -> ExpQ
-el'WithAttr tag [] = [| el' tag |]
-el'WithAttr tag [("class", cl)] = [| elClass' tag cl |]
-el'WithAttr tag attr = [| elAttr' tag (M.fromList attr) |]
+el'WithAttr tag [] Nothing = [| el' tag |]
+el'WithAttr tag [] (Just dynAttr) = [| elDynAttr' tag $(unboundVarE $ mkName dynAttr) |]
+el'WithAttr tag [("class", cl)] Nothing = [| elClass' tag cl |]
+el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromList attr) |]
+el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromList attr) <$> dnyAttr) |]
 
 
 cchain :: (Ref -> Name) -> Chain ->  ExpQ

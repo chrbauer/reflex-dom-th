@@ -6,7 +6,8 @@
     # List of packages from the project you want to work on in
     # the shell (default is all the projects local packages).
     packages = ps: with ps; [
-       megaparsec
+      megaparsec
+      reflex-dom-core
     #   pkgb
     ];
 

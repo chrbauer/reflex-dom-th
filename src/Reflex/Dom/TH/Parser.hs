@@ -20,12 +20,12 @@ import Language.Haskell.TH.Syntax
 
 type Parser = Parsec Void String
 type TTag = String
-data AttributeType = Static | Dynamic deriving (Show, Lift)
-type Attribute = (AttributeType, String, String)
+type Attribute = (String, String)
 type Ref = Int
 data TElement = TElement { tTag :: TTag
                          , tRef :: Maybe Ref
                          , tAttrs :: [Attribute]
+                         , tDynAttrs :: Maybe String
                          , tChilds :: [TElement] }
                | TText String
                | TComment String
@@ -46,6 +46,8 @@ openTag =
        space
        attrs <- attributes
        space
+       dynAttr <- optional varRef
+       space
        return (tag, ref, attrs)
 
 closeTag :: String -> Parser ()
@@ -59,7 +61,7 @@ stringLiteral :: Parser String
 stringLiteral = char '\"' *> manyTill L.charLiteral (char '\"')
 
 attribute :: Parser Attribute
-attribute = (Static,,) <$>  (some (alphaNumChar <|> char '-') <* char '=') <*> stringLiteral
+attribute = (,) <$>  (some (alphaNumChar <|> char '-') <* char '=') <*> stringLiteral
 
 
 attributes :: Parser [Attribute]
@@ -76,14 +78,14 @@ node = do
 varName :: Parser String
 varName = (:) <$> lowerChar <*> many alphaNumChar
 
-widget :: Parser TElement
-widget =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
+varRef :: Parser TElement
+varRef =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
 
 text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$>  someTill anySingle (lookAhead (char '<' *> return () <|> string "{{" *> return () ))
 
 element :: Parser TElement     
-element = (comment <|>  node <|> widget <|> text) <* space
+element = (comment <|>  node <|> varRef <|> text) <* space
   
 template :: Parser [TElement]
 template = do

@@ -43,7 +43,14 @@ Dynamic content can be injected between two curly braces. It will reference an u
   where item1, item2 :: MonadWidget t m =>  m ()
         item1 = text "Item1"
         item2 = text "Item2"
-```        
+```
+
+It is also possible to bind additionally a `Dynamic t (Map Text Text)' to the attributes
+
+```
+divWithAttrs :: MonadWidget t m => Dynamic t (Map Text Text) -> m ()
+divWithAttrs dynAttrs = [dom|<div class="list" {{attr}}></div> |]
+```
 
 
 To bind events to the elements it is possible to extract get the elements as a result. The reference number is the position in the result tuple.
