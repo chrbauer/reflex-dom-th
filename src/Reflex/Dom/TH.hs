@@ -14,8 +14,11 @@ import Language.Haskell.TH.Syntax
 import Reflex.Dom.TH.Parser
 import Reflex.Dom.Widget.Basic 
 import qualified Data.Map as M
-import Data.List (insert)
+import Data.List (insert, sortBy)
 import Data.Array
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Function (on)
 
 type Ref = Int
 
@@ -33,7 +36,7 @@ data CElement = CElement { cTag :: String
                          , cChildRefs :: [Ref]
                          , cOutRefs :: [Ref]
                          , cMyRef :: Maybe Ref
-                         , cAttrs :: [(String, String)]
+                         , cAttrs :: [(Text, Text)]
                          , cDynAttrs :: Maybe String
                          , cChilds :: Chain }
                | CText String
@@ -54,11 +57,12 @@ compile [] inRefs = CResult inRefs
 compile ((TElement {..}):etail) inRefs =
       CBind elem' (CRTuple tRef childRefs) (compile etail expRefs)
   where
-    elem' = CElement tTag inRefs childRefs outRefs tRef tAttrs tDynAttrs childChain
+    elem' = CElement tTag inRefs childRefs outRefs tRef attrs tDynAttrs childChain
     childChain = compile tChilds []
     childRefs = chainOut childChain
     outRefs = maybe id insert tRef childRefs 
     expRefs = merge inRefs outRefs
+    attrs    = sortBy (compare `on` fst) [ (T.pack k, T.pack v) | (k, v) <- tAttrs ]
 
 
 compile (TWidget w r:etail)  inRefs =   CBind (CWidget w r) (maybe CREmpty CRSimple r) (compile etail expRefs)
@@ -83,19 +87,19 @@ clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
                                                 , tupP $ map (varP . var) crefs]]
 
                                      
-elWithAttr :: String -> [(String, String)] -> Maybe String -> ExpQ
+elWithAttr :: String -> [(Text, Text)] -> Maybe String -> ExpQ
 elWithAttr tag [] Nothing = [| el tag |]
 elWithAttr tag [] (Just dynAttr) = [| elDynAttr tag $(unboundVarE $ mkName dynAttr) |]
 elWithAttr tag [("class", cl)] Nothing = [| elClass tag cl |]
-elWithAttr tag attr Nothing = [| elAttr tag (M.fromList attr) |]
-elWithAttr tag attr (Just dynAttr) = [| elDynAttr tag (flip M.union (M.fromList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
+elWithAttr tag attr Nothing = [| elAttr tag (M.fromAscList attr) |]
+elWithAttr tag attr (Just dynAttr) = [| elDynAttr tag (flip M.union (M.fromAscList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
-el'WithAttr :: String -> [(String, String)] -> Maybe String  -> ExpQ
+el'WithAttr :: String -> [(Text, Text)] -> Maybe String  -> ExpQ
 el'WithAttr tag [] Nothing = [| el' tag |]
 el'WithAttr tag [] (Just dynAttr) = [| elDynAttr' tag $(unboundVarE $ mkName dynAttr) |]
 el'WithAttr tag [("class", cl)] Nothing = [| elClass' tag cl |]
-el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromList attr) |]
-el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
+el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromAscList attr) |]
+el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromAscList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
 
 cchain :: (Ref -> Name) -> Chain ->  ExpQ

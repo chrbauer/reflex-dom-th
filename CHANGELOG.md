@@ -1,7 +1,12 @@
 # Revision history for reflex-dom-th
 
-## 0.2.0.0 -- 2022-02-18
+## 0.3.01
+* pre sort and pack attribute maps to Text
 
+
+## 0.3.00 -- 2022-03-02
+
+* support for dynamic attributes
 * parser accepts space between last attribute and >
 
 ## 0.2.0.0 -- 2022-02-20
