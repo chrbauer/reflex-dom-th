@@ -9,7 +9,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -33,7 +33,8 @@ jobs:
     - name: Install dependencies
       run: |
         cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks
+        free -h
+        cabal build --only-dependencies --enable-tests --enable-benchmarks --ghc-options="+RTS -M6G" -j1
     - name: Build
       run: cabal build --enable-tests --enable-benchmarks all
     - name: Run tests
