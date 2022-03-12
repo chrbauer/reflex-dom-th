@@ -19,6 +19,7 @@ import Data.Array
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Function (on)
+import Instances.TH.Lift
 
 type Ref = Int
 
