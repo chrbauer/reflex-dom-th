@@ -1,7 +1,8 @@
 # Revision history for reflex-dom-th
 
 ## 0.3.01
-* pre sort and pack attribute maps to Text
+* pre sorting and packing of attribute maps to text
+** this solves a problem with empty attributes like in <tag attr="">
 
 
 ## 0.3.00 -- 2022-03-02
