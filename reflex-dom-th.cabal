@@ -64,7 +64,7 @@ test-suite test-reflex-dom-th
           , megaparsec
           , hspec
           , reflex-dom-th
-          , stm >= 2.5.0.2
+          , stm
           , tasty
           , tasty-golden
           , tasty-hspec
