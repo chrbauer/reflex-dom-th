@@ -19,7 +19,8 @@ import Data.Array
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Function (on)
-import Instances.TH.Lift
+import Instances.TH.Lift()
+import Control.Monad.Reader
 
 type Ref = Int
 
@@ -28,6 +29,8 @@ data ChildResult =
  | CRSimple Ref
  | CRTuple (Maybe Ref) [Ref]
  deriving Show
+
+type VarEnv a = Reader (Ref -> Name) a
 
 data Chain = CBind CElement ChildResult Chain | CResult [Ref]
   deriving Show
@@ -75,17 +78,18 @@ compile (e:etail) inRefs =
     toC (TComment c) = CComment c
     toC _ = error "internal"
                            
-
+withVarF :: MonadReader t m => (t -> b) -> m b
+withVarF f = ask >>= \ var -> return (f var)
 
 opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
 opt var = maybe (runQ [p| () |]) $ varP . var
 
-clambda :: (Ref -> Name) -> ChildResult -> ExpQ -> ExpQ
-clambda _    CREmpty       =  lamE [wildP]
-clambda var (CRSimple v)  =  lamE [tupP [varP $ var v]]
-clambda var (CRTuple Nothing crefs)  =  lamE [tupP $ map (varP . var) crefs]
-clambda var (CRTuple mref crefs)  =  lamE [tupP [ opt var mref
-                                                , tupP $ map (varP . var) crefs]]
+clambda :: ChildResult -> ExpQ -> VarEnv ExpQ
+clambda CREmpty   e    =  return $ lamE [wildP] e
+clambda (CRSimple v)  e =   withVarF $ \ var -> lamE [tupP [varP $ var v]] e
+clambda (CRTuple Nothing crefs) e =  withVarF  $ \ var -> lamE [tupP $ map (varP . var) crefs] e
+clambda (CRTuple mref crefs) e =  withVarF  $ \ var -> lamE [tupP [ opt var mref
+                                                                  , tupP $ map (varP . var) crefs]] e
 
                                      
 elWithAttr :: String -> [(Text, Text)] -> Maybe String -> ExpQ
@@ -103,17 +107,26 @@ el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromAscList attr) |]
 el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromAscList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
 
-cchain :: (Ref -> Name) -> Chain ->  ExpQ
-cchain var (CResult orefs)  = (appE (varE 'return) (tupE $ map (varE . var) orefs))
-cchain var (CBind ce cres rest)  = [| $(cnode var ce) >>=  $(clambda var cres (cchain var rest)) |]
+cchain :: Chain ->  VarEnv ExpQ
+cchain (CResult orefs)  = do
+  var <- ask
+  return (appE (varE 'return) (tupE $ map (varE . var) orefs))
+cchain (CBind ce cres rest)  = do
+  n <- cnode ce
+  r <- cchain rest
+  l <- clambda cres r
+  return [| $(n) >>=  $(l) |]
 
-cnode :: (Ref -> Name) -> CElement -> ExpQ
-cnode var (CElement tag _ _ _ Nothing attr tDynAttrs childs) = [|  $(elWithAttr tag attr tDynAttrs) $(cchain var childs)|]
-cnode var (CElement tag _ _ _ (Just _) attr tDynAttrs childs) = [| $(el'WithAttr tag attr tDynAttrs) $(cchain var childs) |]
-cnode _ (CText "") = [| blank |]
-cnode _ (CText txt) = [| text txt |]
-cnode _ (CWidget x _) = unboundVarE $ mkName x
-cnode _ (CComment txt) = [| comment txt |]
+
+cnode :: CElement -> VarEnv ExpQ
+cnode (CElement tag _ _ _ Nothing attr tDynAttrs childs) = cchain childs >>= \ cs ->
+     return [|  $(elWithAttr tag attr tDynAttrs) $(cs) |]
+cnode  (CElement tag _ _ _ (Just _) attr tDynAttrs childs) = cchain childs >>= \ cs ->
+     return [| $(el'WithAttr tag attr tDynAttrs) $(cs) |]
+cnode (CText "") = return $ [| blank |]
+cnode (CText txt) = return $ [| text txt |]
+cnode (CWidget x _) = return $ unboundVarE $ mkName x
+cnode (CComment txt) = return [| comment txt |]
 
 chainOut :: Chain -> [Ref] 
 chainOut (CBind _ _ next) = chainOut next
@@ -125,7 +138,7 @@ domExp result =
       out = chainOut refchain
   in do
     varNames <-  listArray (0, length out) <$> mapM (\ r -> newName ("r" ++ show r)) out
-    cchain (varNames !) refchain
+    runReader (cchain refchain) (varNames !)
 
 dom :: QuasiQuoter
 dom = QuasiQuoter
