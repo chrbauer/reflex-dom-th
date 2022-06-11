@@ -1,4 +1,4 @@
-name: Haskell CI
+name: parser tests
 
 on:
   push:
@@ -6,36 +6,16 @@ on:
   pull_request:
     branches: [ main ]
 
+
 jobs:
   build:
-
-    runs-on: debian-latest
-
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest']
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-haskell@v1
-      with:
-        ghc-version: 'latest'
-        cabal-version: 'latest'
-
-    - name: Cache
-      uses: actions/cache@v1
-      env:
-        cache-name: cache-cabal
-      with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
-    - name: Install dependencies
-      run: |
-        cabal update
-        free -h
-        cabal build --only-dependencies --enable-tests --enable-benchmarks --ghc-options="+RTS -M6G" -j1
-    - name: Build
-      run: cabal build --enable-tests --enable-benchmarks all
-    - name: Run tests
-      run: cabal test all
+      - uses: actions/checkout@v2
+      - name: Install Nix
+        uses: cachix/install-nix-action@v12
+      - name: run-tests
+        run: nix-shell --run "cabal name" --substituters https://nixcache.reflex-frp.org --trusted-public-keys ryantrinkle.com-1:JJiAKaRv9mWgpVAz8dwewnZe0AzzEAzPkagE9SP5NWI=
