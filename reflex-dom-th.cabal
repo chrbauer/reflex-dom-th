@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               reflex-dom-th
-version:            0.3.0.1
+version:            0.3.2
 
 -- A short (one-line) description of the package.
 synopsis: reflex-dom-th transpiles HTML templates to haskell code for reflex-dom
@@ -80,5 +80,3 @@ test-suite test-reflex-dom-th
 --   build-depends:
 --       base >= 4 && < 5
 --     , reflex-dom
-
-    
