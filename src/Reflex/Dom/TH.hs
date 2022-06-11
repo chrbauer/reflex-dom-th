@@ -82,14 +82,18 @@ withVarF :: MonadReader t m => (t -> b) -> m b
 withVarF f = ask >>= \ var -> return (f var)
 
 opt :: (Ref -> Name) -> Maybe Ref -> Q Pat
-opt var = maybe (runQ [p| () |]) $ varP . var
+opt var = maybe wildP $ varP . var
+
+tupArg :: (t -> Name) -> [t] -> PatQ
+tupArg var [x]   = varP $ var x
+tupArg var args  = tupP $ map (varP . var) args
 
 clambda :: ChildResult -> ExpQ -> VarEnv ExpQ
 clambda CREmpty   e    =  return $ lamE [wildP] e
-clambda (CRSimple v)  e =   withVarF $ \ var -> lamE [tupP [varP $ var v]] e
-clambda (CRTuple Nothing crefs) e =  withVarF  $ \ var -> lamE [tupP $ map (varP . var) crefs] e
+clambda (CRSimple v)  e =   withVarF $ \ var -> lamE [varP $ var v] e
+clambda (CRTuple Nothing crefs) e =  withVarF  $ \ var -> lamE [tupArg var crefs] e
 clambda (CRTuple mref crefs) e =  withVarF  $ \ var -> lamE [tupP [ opt var mref
-                                                                  , tupP $ map (varP . var) crefs]] e
+                                                                  , tupArg var crefs]] e
 
                                      
 elWithAttr :: String -> [(Text, Text)] -> Maybe String -> ExpQ
@@ -106,11 +110,14 @@ el'WithAttr tag [("class", cl)] Nothing = [| elClass' tag cl |]
 el'WithAttr tag attr Nothing = [| elAttr' tag (M.fromAscList attr) |]
 el'WithAttr tag attr (Just dynAttr) = [| elDynAttr' tag (flip M.union (M.fromAscList attr) <$>  $(unboundVarE $ mkName dynAttr)) |]
 
+tupRes :: (t -> Name) -> [t] -> ExpQ
+tupRes var [a] = varE $ var a
+tupRes var l   = tupE $ map (varE . var) l
 
 cchain :: Chain ->  VarEnv ExpQ
 cchain (CResult orefs)  = do
   var <- ask
-  return (appE (varE 'return) (tupE $ map (varE . var) orefs))
+  return (appE (varE 'return) (tupRes var orefs))
 cchain (CBind ce cres rest)  = do
   n <- cnode ce
   r <- cchain rest

@@ -15,7 +15,7 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L 
 import Data.Void
 import Control.Monad
-import Language.Haskell.TH.Syntax
+--import Language.Haskell.TH.Syntax
 
 type Parser = Parsec Void String
 type TTag = String
