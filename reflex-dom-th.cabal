@@ -39,6 +39,7 @@ library
             , array
             , containers
             , megaparsec
+            , gettext-th
             , mtl
             , reflex-dom-core
             , template-haskell
