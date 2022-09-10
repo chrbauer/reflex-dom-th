@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               reflex-dom-th
-version:            0.3.2
+version:            0.3.3
 
 -- A short (one-line) description of the package.
 synopsis: reflex-dom-th transpiles HTML templates to haskell code for reflex-dom
@@ -33,7 +33,7 @@ library
   exposed-modules:
           Reflex.Dom.TH.Parser
         , Reflex.Dom.TH
-  default-extensions: TemplateHaskell, TupleSections, DeriveLift, RecordWildCards, QuasiQuotes, OverloadedStrings, FlexibleContexts
+  default-extensions: TemplateHaskell, TupleSections, DeriveLift, RecordWildCards, QuasiQuotes, OverloadedStrings, FlexibleContexts, ScopedTypeVariables
   build-depends:
               base >= 4 && < 5
             , array

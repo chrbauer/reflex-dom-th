@@ -27,6 +27,7 @@ data TElement = TElement { tTag :: TTag
                          , tDynAttrs :: Maybe String
                          , tChilds :: [TElement] }
                | TText String
+               | TGettext String
                | TComment String
                | TWidget String (Maybe Ref)
                deriving Show
@@ -79,6 +80,10 @@ varName = (:) <$> lowerChar <*> many alphaNumChar
 varRef :: Parser String
 varRef =  string "{{" *> space *> varName <* string "}}" <* space
 
+gettext :: Parser TElement
+gettext = TGettext <$> (string "[__|" *> space *> manyTill anySingle (string "|]"))
+
+
 widget :: Parser TElement
 widget =  TWidget <$> (string "{{" *> space *> varName) <*> (refOpt <* (string "}}"))
 
@@ -86,7 +91,7 @@ text :: Parser TElement
 text =  TText <$>  dropWhileEnd isSpace <$>  someTill anySingle (lookAhead (char '<' *> return () <|> string "{{" *> return () ))
 
 element :: Parser TElement     
-element = (comment <|>  node <|> widget <|> text) <* space
+element = (comment <|>  node <|> widget <|> gettext <|> text) <* space
   
 template :: Parser [TElement]
 template = do

@@ -63,3 +63,11 @@ To bind events to the elements it is possible to extract get the elements as a r
                           </ul> |]
 ```		       
 
+
+There is also support for translatable text from [gettext-th](https://hackage.haskell.org/package/gettext-th). 
+
+To add translatable text in a template File (see domFile) 
+
+```
+<div>[__|Hello world|]</div>
+```
