@@ -38,7 +38,7 @@ refOpt = optional . try $ do
       void $ char '#'
       L.decimal <* space
 
-openTag :: Parser (String, [TElement] -> TElement)
+openTag :: Parser (String, [TElement] -> TElement, Bool)
 openTag =  
      between (char '<') (char '>') $ do
        tag <- many (alphaNumChar <|> char '-')
@@ -47,7 +47,8 @@ openTag =
        attrs <- attributes
        space
        dynAttr <- optional varRef
-       return $ (tag, TElement tag ref attrs dynAttr)
+       single <- option False (char '/' *> return True)
+       return $ (tag, TElement tag ref attrs dynAttr, single)
 
 closeTag :: String -> Parser ()
 closeTag tag = void $ between (string "</" >> space) (char '>') (string tag >> space)
@@ -69,10 +70,13 @@ attributes = sepEndBy attribute space1 <* space
 
 node :: Parser TElement
 node = do
-  (tag, mkElem) <- openTag
-  space
-  childs <- manyTill element (closeTag tag)
-  return $ mkElem childs
+  (tag, mkElem, single) <- openTag
+  if single then
+    return $ mkElem []
+   else  do
+    space
+    childs <- manyTill element (closeTag tag)
+    return $ mkElem childs
 
 varName :: Parser String
 varName = (:) <$> lowerChar <*> many alphaNumChar
