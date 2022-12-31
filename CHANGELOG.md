@@ -1,5 +1,11 @@
 # Revision history for reflex-dom-th
 
+## 0.3.4
+* support self-closing tags like <div />
+
+## 0.3.3
+* gettext-th support
+
 ## 0.3.2
 * ghc 8.10 support 
 

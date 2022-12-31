@@ -22,6 +22,8 @@ import Data.Function (on)
 import Instances.TH.Lift()
 import Control.Monad.Reader
 
+import I18N.Gettext.TH (gettext)
+
 type Ref = Int
 
 data ChildResult =
@@ -44,6 +46,7 @@ data CElement = CElement { cTag :: String
                          , cDynAttrs :: Maybe String
                          , cChilds :: Chain }
                | CText String
+               | CGettext String
                | CComment String
                | CWidget String (Maybe Ref)
                deriving Show
@@ -75,6 +78,7 @@ compile (e:etail) inRefs =
       CBind (toC e) CREmpty (compile etail inRefs)
   where
     toC (TText t) = CText t
+    toC (TGettext t) = CGettext t
     toC (TComment c) = CComment c
     toC _ = error "internal"
                            
@@ -132,6 +136,8 @@ cnode  (CElement tag _ _ _ (Just _) attr tDynAttrs childs) = cchain childs >>= \
      return [| $(el'WithAttr tag attr tDynAttrs) $(cs) |]
 cnode (CText "") = return $ [| blank |]
 cnode (CText txt) = return $ [| text txt |]
+cnode (CGettext txt') =   
+  return $ appE [| text |] (quoteExp gettext txt')
 cnode (CWidget x _) = return $ unboundVarE $ mkName x
 cnode (CComment txt) = return [| comment txt |]
 
