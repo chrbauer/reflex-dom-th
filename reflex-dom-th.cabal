@@ -69,10 +69,6 @@ test-suite test-reflex-dom-th
           , tasty
           , tasty-golden
           , tasty-hspec
-          --, hspec-megaparsec
-
-                    
-          --, tasty-hspec
           
 -- executable ref-dom-th-example
 --   hs-source-dirs: example
